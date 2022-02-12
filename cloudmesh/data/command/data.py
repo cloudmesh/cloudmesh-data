@@ -18,6 +18,7 @@ class DataCommand(PluginCommand):
                 data compress [--algorithm=KIND] LOCATION
                 data uncompress LOCATION
                 data info LOCATION
+                data benchmark [--csv]
 
           Compresses the specified item. The default algorithm is xy, Alternative it gz.
 
@@ -41,7 +42,12 @@ class DataCommand(PluginCommand):
 
             print("option a")
 
-        elif arguments.list:
-            print("option b")
+        elif arguments.benchmark:
+            if arguments["--csv"]:
+                # only returns the csv lines in the benchmark
+                raise NotImplementedError
+            elif:
+                from cloudmesh.common.StopWatch import StopWatch
+                StopWatch.benchmark()
 
         return ""

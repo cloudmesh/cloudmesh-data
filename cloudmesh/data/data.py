@@ -77,7 +77,7 @@ class Data:
         """
         r = ""
         return r
-        
+
     def compress(self, location):
         """
         compresses the file or directory at the given location
