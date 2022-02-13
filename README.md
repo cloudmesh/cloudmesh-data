@@ -10,6 +10,6 @@ Documentation
 
 [![image](https://img.shields.io/github/license/TankerHQ/python-cloudmesh-data.svg)](https://github.com/TankerHQ/python-cloudmesh-data/blob/main/LICENSE)
 
-see cloudmesh.cmd5
+see cloudmesh.data
 
-* https://github.com/cloudmesh/cloudmesh.cmd5
+* https://github.com/cloudmesh/cloudmesh.data
