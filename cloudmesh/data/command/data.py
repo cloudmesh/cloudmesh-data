@@ -1,10 +1,10 @@
 from cloudmesh.shell.command import command
 from cloudmesh.shell.command import PluginCommand
-from cloudmesh.common.console import Console
-from cloudmesh.common.util import path_expand
-from pprint import pprint
 from cloudmesh.common.debug import VERBOSE
 from cloudmesh.shell.command import map_parameters
+from cloudmesh.data.data import Data
+
+import pprint
 
 class DataCommand(PluginCommand):
 
@@ -15,18 +15,25 @@ class DataCommand(PluginCommand):
         ::
 
           Usage:
-                data compress [--algorithm=KIND] LOCATION
-                data uncompress LOCATION
-                data info LOCATION
+                data compress [--algorithm=kind --level=n --native --sepopts] <file> [--] <location>
+                data uncompress [--native --sepopts --force] [--] <file> [<destination>]
+                data info <location>
                 data benchmark [--csv]
 
-          Compresses the specified item. The default algorithm is xy, Alternative it gz.
+          Compresses the specified item. The default algorithm is xz, Alternative it gz.
 
           Arguments:
-              LOCATION   a file or directory name
+              file   a file or directory name to compress or decompress
+              location  the compression algorithm to use
+
 
           Options:
-              -h      help
+              -h        help
+              --level=n   the level of compression to apply 0 (no compression) to 9 (extreme)
+              --algorithm the algorithm to use; gz, bzip2, xz
+              --native    use the OS provided tar for extraction, otherwise use python
+              --sepopts   perform archival and compression as seperate steps
+              --force     disables file overwrite protection.
 
         """
 
@@ -36,17 +43,27 @@ class DataCommand(PluginCommand):
 
         VERBOSE(arguments)
 
-        if arguments.compress:
-            location = arguments.LOCATION
-            algorithm = arguments.algorithm
+        worker = Data(algorithm=arguments['--algorithm'],
+                      native=True if arguments['--native'] else False,
+                      sep_opts=True if arguments['--sepopts'] else False)
 
-            print("option a")
+        if arguments.compress:
+            worker.compress(src=arguments['<location>'],
+                            out=arguments['<file>'],
+                            level=arguments['--level'])
+
+            print("option compress")
+        elif arguments.uncompress:
+            worker.uncompress_expand(
+                file=arguments["<file>"],
+                path=arguments["<destination>"],
+                force=True if arguments['--force'] else False)
 
         elif arguments.benchmark:
             if arguments["--csv"]:
                 # only returns the csv lines in the benchmark
                 raise NotImplementedError
-            elif:
+            else:
                 from cloudmesh.common.StopWatch import StopWatch
                 StopWatch.benchmark()
 
