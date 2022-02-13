@@ -3,6 +3,7 @@ from cloudmesh.shell.command import PluginCommand
 from cloudmesh.common.debug import VERBOSE
 from cloudmesh.shell.command import map_parameters
 from cloudmesh.data.data import Data
+from cloudmesh.common.util import path_expand
 
 import pprint
 
@@ -38,11 +39,6 @@ class DataCommand(PluginCommand):
             TBD
 
         """
-
-        # TODO: should it be?
-        #   data compress [--algorithm=kind] [--level=n] [--native] [--sepopts] FILE [--] LOCATION
-        #   data uncompress [--benchmark] [--native] [--sepopts] [--force] [--] FILE [DESTINATION]
-
         map_parameters(arguments,
                        "benchmark",
                        "algorithm",
@@ -60,6 +56,9 @@ class DataCommand(PluginCommand):
                       sep_opts=arguments.sepopts)
 
         if arguments.compress:
+            arguments.LOCATION = path_expand(arguments.LOCATION)
+            arguments.FILE = path_expand(arguments.FILE)
+
             worker.compress(src=arguments.LOCATION,
                             out=arguments.FILE,
                             level=arguments.level)
@@ -67,6 +66,9 @@ class DataCommand(PluginCommand):
                 worker.benchmark()
 
         elif arguments.uncompress:
+            arguments.FILE = path_expand(arguments.FILE)
+            arguments.DESTINATION = path_expand(arguments.DESTINATION)
+
             worker.uncompress_expand(
                 file=arguments.FILE,
                 path=arguments.DESTINATION,
