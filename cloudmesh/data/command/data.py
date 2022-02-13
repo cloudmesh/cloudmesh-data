@@ -18,7 +18,6 @@ class DataCommand(PluginCommand):
                 data compress [--benchmark] [--algorithm=kind --level=n --native --sepopts] FILE [--] LOCATION
                 data uncompress [--benchmark] [--native --sepopts --force] [--] FILE [DESTINATION]
                 data info LOCATION
-                data benchmark [--csv]
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
 
