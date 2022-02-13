@@ -15,9 +15,9 @@ class DataCommand(PluginCommand):
         ::
 
           Usage:
-                data compress [--algorithm=kind --level=n --native --sepopts] <file> [--] <location>
-                data uncompress [--native --sepopts --force] [--] <file> [<destination>]
-                data info <location>
+                data compress [--benchmark] [--algorithm=kind --level=n --native --sepopts] FILE [--] LOCATION
+                data uncompress [--benchmark] [--native --sepopts --force] [--] FILE [DESTINATION]
+                data info LOCATION
                 data benchmark [--csv]
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
@@ -30,41 +30,46 @@ class DataCommand(PluginCommand):
           Options:
               -h        help
               --level=n   the level of compression to apply 0 (no compression) to 9 (extreme)
-              --algorithm the algorithm to use; gz, bzip2, xz
-              --native    use the OS provided tar for extraction, otherwise use python
-              --sepopts   perform archival and compression as seperate steps
-              --force     disables file overwrite protection.
+              --algorithm the algorithm to use; gz, bzip2, xz [default: xz]
+              --native    use the OS provided tar for extraction, otherwise use python [default: True]
+              --sepopts   perform archival and compression as seperate steps [default: False]
+              --force     disables file overwrite protection [default: False].
 
         """
 
-        # arguments.FILE = arguments['--file'] or None
+        # TODO: should it be?
+        #   data compress [--algorithm=kind] [--level=n] [--native] [--sepopts] FILE [--] LOCATION
+        #   data uncompress [--benchmark] [--native] [--sepopts] [--force] [--] FILE [DESTINATION]
 
-        map_parameters(arguments, "file")
+        map_parameters(arguments,
+                       "benchmark",
+                       "algorithm",
+                       "file",
+                       "native",
+                       "level",
+                       "force",
+                       "csv",
+                       "sepopts")
 
         VERBOSE(arguments)
 
-        worker = Data(algorithm=arguments['--algorithm'],
-                      native=True if arguments['--native'] else False,
-                      sep_opts=True if arguments['--sepopts'] else False)
+        worker = Data(algorithm=arguments.algorithm,
+                      native=arguments.native,
+                      sep_opts=arguments.sepopts)
 
         if arguments.compress:
-            worker.compress(src=arguments['<location>'],
-                            out=arguments['<file>'],
-                            level=arguments['--level'])
+            worker.compress(src=arguments.LOCATION,
+                            out=arguments.FILE,
+                            level=arguments.level)
+            if arguments.benchmark:
+                worker.benchmark()
 
-            print("option compress")
         elif arguments.uncompress:
             worker.uncompress_expand(
-                file=arguments["<file>"],
-                path=arguments["<destination>"],
-                force=True if arguments['--force'] else False)
-
-        elif arguments.benchmark:
-            if arguments["--csv"]:
-                # only returns the csv lines in the benchmark
-                raise NotImplementedError
-            else:
-                from cloudmesh.common.StopWatch import StopWatch
-                StopWatch.benchmark()
+                file=arguments.FILE,
+                path=arguments.DESTINATION,
+                force=arguments.force)
+            if arguments.benchmark:
+                worker.benchmark()
 
         return ""

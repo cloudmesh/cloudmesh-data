@@ -126,6 +126,9 @@ class Data:
         self.UNCOMPRESS = f"tar -{self._OSBIN['tar']['switches'][self.config['algorithm']]['decompress']}"
         self.ending = f"tar -{self._OSBIN['tar']['switches'][self.config['algorithm']]['suffix']}"
 
+    def benchmark(self):
+        StopWatch.benchmark()
+
     @staticmethod
     def _start(kind, location, tag):
         name = location.replace("/", "-")
