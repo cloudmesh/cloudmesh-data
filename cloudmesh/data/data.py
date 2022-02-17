@@ -195,9 +195,11 @@ class Data:
                                   destination=destination),
                     destination=destination)
         else:
+            # select native method
             if self._native_tar:
                 self._os_compress_dir(source, destination=destination)
             else:
+                # try python method first, but if lzm library is missing, use native method
                 try:
                     self._python_compress_dir(source, destination=destination, level=level)
                 except tarfile.CompressionError:
