@@ -16,8 +16,8 @@ class DataCommand(PluginCommand):
         ::
 
           Usage:
-                data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE [--destination=DESTINATION]
-                data uncompress [--benchmark] [--force] --source=SOURCE [--destination=DESTINATION]
+                data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE [--destination=DESTINATION] [--dryrun]
+                data uncompress [--benchmark] [--force] --source=SOURCE [--destination=DESTINATION] [--dryrun]
                 data info --source=SOURCE
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
@@ -60,11 +60,12 @@ class DataCommand(PluginCommand):
                        "level",
                        "force",
                        "csv",
+                       "dryrun",
                        "sepopts")
 
         VERBOSE(arguments)
 
-        worker = Data(algorithm=arguments.algorithm)
+        worker = Data(algorithm=arguments.algorithm, dryrun=arguments.dryrun)
 
         if arguments.compress:
             arguments.source = path_expand(arguments.source)
