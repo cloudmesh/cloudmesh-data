@@ -41,6 +41,35 @@ tar xf DIR.tar.gz
 
 class Data:
 
+    _COMMAND = {
+        'xz': {
+            'decompress_dir': "xzcat {SOURCE}.tar.xz | tar x",
+            'compress_dir': "tar c {SOURCE} | xz > {DESTINATION}.tar.xz",
+            'compress_file': "xz {DESTINATION}.xz",
+            'decompress_file': "xz --decompress {DESTINATION}.xz",
+            'suffix': 'xz',
+            'level': 7
+        },
+        'bzip2': {
+            'decompress_dir': 'bzcat {SOURCE}.bz2 | tar x',
+            'compress_dir': 'tar c {SOURCE} | bzip2 > {DESTINATION}.tar.gz',
+            'decompress_file': 'bunzip {SOURCE}.bz2',
+            'compress_file': 'bzip2 {SOURCE}',
+            'suffix': 'bz2',
+            'level': 9
+        },
+        'gz': {
+            'decompress_dir': 'tar xf {SOURCE}.gz',
+            'compress_dir': "tar c {SOURCE} | gzip > {DESTINATION}.tar.gz",
+            'decompress_file': 'gunzip {SOURCE}.gz',
+            'compress_file': "gzip {SOURCE} ",
+            'suffix': 'gz',
+            'level': 9
+        },
+    }
+    # command = Data.COMMAND["xz"]["compress_dir"].format(SOURCE="a", DESTINATION="a")
+    # self._run(command)
+    
     _OSBIN: typing.Final = {
             'xz': {
                 'decompress': 'xzcat',
