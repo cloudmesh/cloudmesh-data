@@ -145,7 +145,7 @@ class Data:
         return r
 
     @staticmethod
-    def info(source):
+    def get_info(source, binary=False):
         """
         prints out information about the directory and if available the
         compressed file all types will be probed (xz, gz, bzip2)
@@ -153,8 +153,11 @@ class Data:
         :param source: file or directory
         :return: str
         """
-        r = Shell.run(f"du -s -h {source}")
-        return r
+        if not binary:
+            return Shell.run(f"du -sh {source}").strip().split()[0]
+        else:
+            return Shell.run(f"du -sb {source}").strip().split()[0]
+
 
     def compress(self, source: str, destination: str = None, level: int = 5):
         """

@@ -1,3 +1,5 @@
+import os
+
 from cloudmesh.shell.command import command
 from cloudmesh.shell.command import PluginCommand
 from cloudmesh.common.debug import VERBOSE
@@ -5,7 +7,6 @@ from cloudmesh.shell.command import map_parameters
 from cloudmesh.data.data import Data
 from cloudmesh.common.util import path_expand
 
-import pprint
 
 class DataCommand(PluginCommand):
 
@@ -87,8 +88,25 @@ class DataCommand(PluginCommand):
                 force=arguments.force)
             if arguments.benchmark:
                 worker.benchmark()
-        elif arguments["--info"]:
+
+        elif arguments.info:
+            import humanize
             arguments.source = path_expand(arguments.source)
-            worker.info(arguments.source)
+            _info_dest = worker.get_info(arguments.source)
+            print(_info_dest, arguments.source)
+
+            try:
+                source = arguments.source.rsplit(".", 1)[0]
+                _info_source = worker.get_info(source)
+                print(_info_source, source)
+
+
+                s = _info_source.split()[0]
+                d = _info_dest.split()[0]
+                r = float(worker.get_info(source, binary=True)) / float(worker.get_info(arguments.source, binary=True))
+                print (f"{r:.2f}")
+
+            except Exception as e:
+                print (e)
 
         return ""
