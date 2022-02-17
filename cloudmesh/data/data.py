@@ -171,6 +171,7 @@ class Data:
         if os.path.isdir(source):
             self.compress_dir(source, destination, level)
         else:
+            # TODO: why is the level missing here?
             self.compress_file(source, destination)
 
     def compress_dir(self, source: str, destination: str = None, level: int = 5):
