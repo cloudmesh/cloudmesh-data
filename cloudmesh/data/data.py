@@ -46,7 +46,7 @@ class Data:
             },
             "file": {
                 'compress': "xz {DESTINATION}.xz",
-                'decompress': "xz --decompress {DESTINATION}.xz",
+                'decompress': "xz --decompress {SOURCE}.xz",
             },
             'suffix': 'xz',
             'level': 7
