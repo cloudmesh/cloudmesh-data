@@ -16,8 +16,8 @@ class DataCommand(PluginCommand):
         ::
 
           Usage:
-                data compress [--benchmark] [--algorithm=KIND] [--level=N] [--native] [--sepopts] --source=SOURCE [--destination=DESTINATION]
-                data uncompress [--benchmark] [--native] [--sepopts] [--force] [--] --source=SOURCE [--destination=DESTINATION]
+                data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE [--destination=DESTINATION]
+                data uncompress [--benchmark] [--force] --source=SOURCE [--destination=DESTINATION]
                 data info --source=SOURCE
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
@@ -32,8 +32,6 @@ class DataCommand(PluginCommand):
               -h                help
               --level=N         the level of compression to apply 0 (no compression) to 9 (extreme)
               --algorithm=KIND  the algorithm to use; gz, bzip2, xz [default: xz]
-              --native          use the OS provided tar for extraction, otherwise use python [default: True]
-              --sepopts         perform archival and compression as seperate steps [default: False]
               --force           disables file overwrite protection [default: False].
 
           Description:
@@ -41,6 +39,9 @@ class DataCommand(PluginCommand):
 
         """
 
+        # TODO: comress should be
+        #                 data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE... [--destination=DESTINATION]
+        # TODO: as far as I can tell sepopts is not needed .... do not have two steps ...
 
         """
             du -h -s data
@@ -63,9 +64,7 @@ class DataCommand(PluginCommand):
 
         VERBOSE(arguments)
 
-        worker = Data(algorithm=arguments.algorithm,
-                      native=arguments.native,
-                      sep_opts=arguments.sepopts)
+        worker = Data(algorithm=arguments.algorithm)
 
         if arguments.compress:
             arguments.source = path_expand(arguments.source)
@@ -89,7 +88,6 @@ class DataCommand(PluginCommand):
                 worker.benchmark()
         elif arguments["--info"]:
             arguments.source = path_expand(arguments.source)
-
-            raise NotImplementedError ("the info command is not yet implemented")
+            worker.info(arguments.source)
 
         return ""

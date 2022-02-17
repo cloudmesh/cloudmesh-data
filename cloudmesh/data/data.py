@@ -92,18 +92,12 @@ class Data:
                  dryrun: bool = False,
                  force: bool = True,
                  tag: str = "",
-                 native: bool = False,
-                 sep_opts: bool = False,
                  *args,
                  **kwargs):
 
         # Test if native can be used.  If tar is missing, fall back to
         # native python method.
-        if ((self._test_os_bin('tar') or self._test_os_bin('tar.exe'))
-                and native):
-            self._native_tar = True
-        else:
-            self._native_tar = False
+        self._native_tar = self._test_os_bin('tar') or self._test_os_bin('tar.exe')
 
         # Establish instance-level configuration settings
         self.config = {
@@ -111,7 +105,6 @@ class Data:
             'dryrun': dryrun,
             'force': force,
             'tag': tag,
-            'sep_opts': sep_opts,
             'native': self._native_tar
         }
         self.config.update({'args': args,
@@ -150,18 +143,37 @@ class Data:
         return r
 
     @staticmethod
-    def info(location):
+    def info(source):
         """
         prints out information about the directory and if available the
         compressed file all types will be probed (xz, gz, bzip2)
 
-        :param location: file or directory
+        :param source: file or directory
         :return: str
         """
-        r = f"{location}"
+        r = Shell.run(f"du -s -h {source}")
         return r
 
     def compress(self, source: str, destination: str = None, level: int = 5):
+        """
+        Public mechanism to compress a directory or single file using the
+        instance configured algorithm in set in self.config['algorithm'].
+
+        :param source:
+        :type source:
+        :param destination:
+        :type destination:
+        :param level:
+        :type level:
+        :return:
+        :rtype:
+        """
+        if os.path.isdir(source):
+            self.compress_dir(source, destination, level)
+        else:
+            self.compress_file(source, destination)
+
+    def compress_dir(self, source: str, destination: str = None, level: int = 5):
         """
         Public mechanism to compress a directory or single file using the
         instance configured algorithm in set in self.config['algorithm'].
@@ -188,44 +200,17 @@ class Data:
         Returns:
             None: method provides no feedback on operation.
         """
-        if self.config['sep_opts']:
-            with tempfile.TemporaryDirectory() as tempd:
-                self.compress_file(
-                    source=self.tape(os.path.join(tempd, destination),
-                                  destination=destination),
-                    destination=destination)
+        # select native method
+        if self._native_tar:
+            self._os_compress_dir(source, destination=destination)
         else:
-            # select native method
-            if self._native_tar:
+            # try python method first, but if lzm library is missing, use native method
+            # TODO: source can be a file or a directory, so the method here seems incomplete as it
+            #  does not capture that it can just be a file
+            try:
+                self._python_compress_dir(source, destination=destination, level=level)
+            except tarfile.CompressionError:
                 self._os_compress_dir(source, destination=destination)
-            else:
-                # try python method first, but if lzm library is missing, use native method
-                try:
-                    self._python_compress_dir(source, destination=destination, level=level)
-                except tarfile.CompressionError:
-                    self._os_compress_dir(source, destination=destination)
-
-    def tape(self, source: str, destination: str = None):
-        """Creates a tar file
-
-        This method recursively collects files from the specified location
-        and creates a single tape archive (tar) of the files without
-        applying any compression.
-
-        Args:
-            source(str): the path to the directory or file to include into
-                the tape archive.
-            destination(str): the path to use when writing the tape archive file.
-
-        Returns:
-            str: The name of the outputted tape archive.
-
-        """
-        if self.config['native']:
-            name = self._os_tape_dir(source, destination)
-        else:
-            name = self._python_tape_dir(source, destination)
-        return name
 
     def compress_file(self, source: str, destination: str = None):
         """Compress a single file
@@ -247,18 +232,6 @@ class Data:
         else:
             name = self._python_compress_file(source, destination)
         return name
-
-    def _os_tape_dir(self, location, destination):
-        raise NotImplementedError("Code not implemented yet")
-
-    def _os_compress_file(self, source, destination):
-        raise NotImplementedError("Code not implemented yet")
-
-    def _python_tape_dir(self, location, destination):
-        raise NotImplementedError("Code not implemented yet")
-
-    def _python_compress_file(self, file, destination):
-        raise NotImplementedError("Code not implemented yet")
 
     def _os_compress_dir(self, location: str, destination: str):
         """Use os recursive compression
