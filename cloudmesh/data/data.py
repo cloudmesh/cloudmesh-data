@@ -41,25 +41,25 @@ class Data:
     _COMMAND = {
         'xz': {
             "dir": {
-                'decompress_dir': "xzcat {SOURCE}.tar.xz | tar x",
-                'compress_dir': "tar c {SOURCE} | xz > {DESTINATION}.tar.xz",
+                'decompress': "xzcat {SOURCE}.tar.xz | tar x",
+                'compress': "tar c {SOURCE} | xz > {DESTINATION}.tar.xz",
             },
             "file": {
-                'compress_file': "xz {DESTINATION}.xz",
-                'decompress_file': "xz --decompress {DESTINATION}.xz",
+                'compress': "xz {DESTINATION}.xz",
+                'decompress': "xz --decompress {DESTINATION}.xz",
             },
             'suffix': 'xz',
             'level': 7
         },
         'bzip2': {
             "dir": {
-                'decompress_dir': 'bzcat {SOURCE}.bz2 | tar x',
-                'compress_dir': 'tar c {SOURCE} | bzip2 > {DESTINATION}.tar.gz',
+                'decompress': 'bzcat {SOURCE}.bz2 | tar x',
+                'compress': 'tar c {SOURCE} | bzip2 > {DESTINATION}.tar.gz',
             },
             "file": {
 
-                'decompress_file': 'bunzip {SOURCE}.bz2',
-                'compress_file': 'bzip2 {SOURCE}',
+                'decompress': 'bunzip {SOURCE}.bz2',
+                'compress': 'bzip2 {SOURCE}',
             },
             'suffix': 'bz2',
             'level': 9
@@ -77,7 +77,7 @@ class Data:
             'level': 9
         },
     }
-    # command = Data.COMMAND["xz"]["dir"]["compress"].format(SOURCE="a", DESTINATION="a")
+    # command = Data._COMMAND["xz"]["dir"]["compress"].format(SOURCE="a", DESTINATION="a")
     # self._run(command)
 
     _OSBIN: typing.Final = {
