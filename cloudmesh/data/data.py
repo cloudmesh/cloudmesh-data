@@ -122,6 +122,8 @@ class Data:
         self.ending = f"tar -{self._OSBIN['tar']['switches'][self.config['algorithm']]['suffix']}"
 
     def benchmark(self):
+        # setting it to tru so it looks better
+        StopWatch.timer_status["command"] = True
         StopWatch.benchmark()
 
     @staticmethod
@@ -228,11 +230,17 @@ class Data:
             str: the path to the compressed file
 
         """
-        if self.config['native']:
-            name = self._os_compress_file(source, destination)
-        else:
-            name = self._python_compress_file(source, destination)
-        return name
+        #if self.config['native']:
+        #    name = self._os_compress_file(source, destination)
+        #else:
+        #name = self._python_compress_file(source, destination)
+        #return name
+        # TODO: fix me
+        self._start("compress", "",  self.tag)
+        command = f"tar cf {destination} {source}"
+        r = self._run(command)
+        self._stop("compress", "",  self.tag)
+        return r
 
     def _os_compress_dir(self, location: str, destination: str):
         """Use os recursive compression
