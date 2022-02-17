@@ -84,6 +84,14 @@ class Data:
     #    command = command = Data._COMMAND[kind]["file"]["compress"].format(SOURCE="a", DESTINATION="a")
     # self._run(command)
 
+    # decompress
+    # if "tar" in SOURCE:
+    #    archive = "dir"
+    # else:
+    #    archive = "file"
+    # source = SOURCE.split(".tar")[0]
+    # command = Data._COMMAND[kind][archive]["decompress"].format(SOURCE=source)
+
     _OSBIN: typing.Final = {
         'xz': {
             'decompress': 'xzcat',
