@@ -7,8 +7,6 @@ import tarfile
 import tempfile
 import typing
 
-
-
 """
 BUG: benchmark can be obtained with (this should also work just n a single file not just a dir
 BUG: the lzma missing library bug should be caught and automatically the native method be used ... 
@@ -40,81 +38,93 @@ tar xf DIR.tar.gz
 
 
 class Data:
-
     _COMMAND = {
         'xz': {
-            'decompress_dir': "xzcat {SOURCE}.tar.xz | tar x",
-            'compress_dir': "tar c {SOURCE} | xz > {DESTINATION}.tar.xz",
-            'compress_file': "xz {DESTINATION}.xz",
-            'decompress_file': "xz --decompress {DESTINATION}.xz",
+            "dir": {
+                'decompress_dir': "xzcat {SOURCE}.tar.xz | tar x",
+                'compress_dir': "tar c {SOURCE} | xz > {DESTINATION}.tar.xz",
+            },
+            "file": {
+                'compress_file': "xz {DESTINATION}.xz",
+                'decompress_file': "xz --decompress {DESTINATION}.xz",
+            },
             'suffix': 'xz',
             'level': 7
         },
         'bzip2': {
-            'decompress_dir': 'bzcat {SOURCE}.bz2 | tar x',
-            'compress_dir': 'tar c {SOURCE} | bzip2 > {DESTINATION}.tar.gz',
-            'decompress_file': 'bunzip {SOURCE}.bz2',
-            'compress_file': 'bzip2 {SOURCE}',
+            "dir": {
+                'decompress_dir': 'bzcat {SOURCE}.bz2 | tar x',
+                'compress_dir': 'tar c {SOURCE} | bzip2 > {DESTINATION}.tar.gz',
+            },
+            "file": {
+
+                'decompress_file': 'bunzip {SOURCE}.bz2',
+                'compress_file': 'bzip2 {SOURCE}',
+            },
             'suffix': 'bz2',
             'level': 9
         },
         'gz': {
-            'decompress_dir': 'tar xf {SOURCE}.gz',
-            'compress_dir': "tar c {SOURCE} | gzip > {DESTINATION}.tar.gz",
-            'decompress_file': 'gunzip {SOURCE}.gz',
-            'compress_file': "gzip {SOURCE} ",
+            "dir": {
+                'decompress': 'tar xf {SOURCE}.gz',
+                'compress': "tar c {SOURCE} | gzip > {DESTINATION}.tar.gz",
+            },
+            "file": {
+                'decompress': 'gunzip {SOURCE}.gz',
+                'compress': "gzip {SOURCE} ",
+            },
             'suffix': 'gz',
             'level': 9
         },
     }
-    # command = Data.COMMAND["xz"]["compress_dir"].format(SOURCE="a", DESTINATION="a")
+    # command = Data.COMMAND["xz"]["dir"]["compress"].format(SOURCE="a", DESTINATION="a")
     # self._run(command)
-    
+
     _OSBIN: typing.Final = {
-            'xz': {
-                'decompress': 'xzcat',
-                'compress': 'xz',
-                'suffix': 'xz',
-                'level': 7
-            },
-            'bzip2': {
-                'decompress': 'bzcat',
-                'compress': 'bzip2',
-                'suffix': 'bz2',
-                'level': 9
-            },
-            'gz': {
-                'decompress': 'zcat',
-                'compress': 'gzip',
-                'suffix': 'gz',
-                'level': 9
-            },
-            'tar': {
-                'command': 'tar',
-                'switches': {
-                    'gz': {
-                        'compress': 'zcf',
-                        'decompress': 'zxf',
-                        'suffix': 'tar.gz'
-                    },
-                    'bzip': {
-                        'compress': 'jcf',
-                        'decompress': 'jxf',
-                        'suffix': 'tar.bz2'
-                    },
-                    'xz': {
-                        'compress': 'Jcf',
-                        'decompress': 'Jxf',
-                        'suffix': 'tar.xz'
-                    },
-                    'none': {
-                        'compress': 'cf',
-                        'decompress': 'xf',
-                        'suffix': 'tar'
-                    }
+        'xz': {
+            'decompress': 'xzcat',
+            'compress': 'xz',
+            'suffix': 'xz',
+            'level': 7
+        },
+        'bzip2': {
+            'decompress': 'bzcat',
+            'compress': 'bzip2',
+            'suffix': 'bz2',
+            'level': 9
+        },
+        'gz': {
+            'decompress': 'zcat',
+            'compress': 'gzip',
+            'suffix': 'gz',
+            'level': 9
+        },
+        'tar': {
+            'command': 'tar',
+            'switches': {
+                'gz': {
+                    'compress': 'zcf',
+                    'decompress': 'zxf',
+                    'suffix': 'tar.gz'
+                },
+                'bzip': {
+                    'compress': 'jcf',
+                    'decompress': 'jxf',
+                    'suffix': 'tar.bz2'
+                },
+                'xz': {
+                    'compress': 'Jcf',
+                    'decompress': 'Jxf',
+                    'suffix': 'tar.xz'
+                },
+                'none': {
+                    'compress': 'cf',
+                    'decompress': 'xf',
+                    'suffix': 'tar'
                 }
             }
         }
+    }
 
     def __init__(self,
                  algorithm: str = "xz",
@@ -186,7 +196,6 @@ class Data:
             return Shell.run(f"du -sh {source}").strip().split()[0]
         else:
             return Shell.run(f"du -sb {source}").strip().split()[0]
-
 
     def compress(self, source: str, destination: str = None, level: int = 5):
         """
@@ -262,16 +271,16 @@ class Data:
             str: the path to the compressed file
 
         """
-        #if self.config['native']:
+        # if self.config['native']:
         #    name = self._os_compress_file(source, destination)
-        #else:
-        #name = self._python_compress_file(source, destination)
-        #return name
+        # else:
+        # name = self._python_compress_file(source, destination)
+        # return name
         # TODO: fix me
-        self._start("compress", "",  self.tag)
+        self._start("compress", "", self.tag)
         command = f"tar cfv {destination} {source}"
         r = self._run(command, driver=os.system)
-        self._stop("compress", "",  self.tag)
+        self._stop("compress", "", self.tag)
         return r
 
     def _os_compress_dir(self, location: str, destination: str):
