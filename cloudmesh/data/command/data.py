@@ -16,16 +16,17 @@ class DataCommand(PluginCommand):
         ::
 
           Usage:
-                data compress [--benchmark] [--algorithm=KIND] [--level=N] [--native] [--sepopts] FILE [--] LOCATION
-                data uncompress [--benchmark] [--native] [--sepopts] [--force] [--] FILE [DESTINATION]
+                data compress [--benchmark] [--algorithm=KIND] [--level=N] [--native] [--sepopts] --source=SOURCE [--destination=DESTINATION]
+                data uncompress [--benchmark] [--native] [--sepopts] [--force] [--] --source=SOURCE [--destination=DESTINATION]
                 data info LOCATION
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
+          Example if destination in compress is not specifued the destination will be set to
+          SOURCE.tar.xz
 
           Arguments:
-              FILE         a file or directory name to compress or decompress
-              LOCATION     the compression algorithm to use
-              DESTINATION  the destination where for the uncompression of the directory or file
+              SOURCE       the file source on which compress or uncompree is aplied
+              DESTINATION  the detination file on which compress or uncompress is performed
 
           Options:
               -h                help
@@ -39,10 +40,21 @@ class DataCommand(PluginCommand):
             TBD
 
         """
+
+
+        """
+            du -h -s data
+            4.7G	data
+            du -h -s data.tar.xz 
+            7.4M	data.tar.xz
+            compress  data.tar.xz | ok       | 70.286 | 70.286 | 2022-02-17 02:06:34
+        """
+
         map_parameters(arguments,
                        "benchmark",
                        "algorithm",
-                       "file",
+                       "source",
+                       "destination",
                        "native",
                        "level",
                        "force",
@@ -59,19 +71,19 @@ class DataCommand(PluginCommand):
             arguments.LOCATION = path_expand(arguments.LOCATION)
             arguments.FILE = path_expand(arguments.FILE)
 
-            worker.compress(src=arguments.LOCATION,
-                            out=arguments.FILE,
+            worker.compress(source=arguments.source,
+                            destination=arguments.destination,
                             level=arguments.level)
             if arguments.benchmark:
                 worker.benchmark()
 
         elif arguments.uncompress:
-            arguments.FILE = path_expand(arguments.FILE)
-            arguments.DESTINATION = path_expand(arguments.DESTINATION)
+            arguments.source = path_expand(arguments.source)
+            arguments.destination = path_expand(arguments.destination)
 
             worker.uncompress_expand(
-                file=arguments.FILE,
-                path=arguments.DESTINATION,
+                source=arguments.source,
+                destination=arguments.destination,
                 force=arguments.force)
             if arguments.benchmark:
                 worker.benchmark()

@@ -13,3 +13,11 @@ Documentation
 see cloudmesh.data
 
 * https://github.com/cloudmesh/cloudmesh.data
+
+## requirements
+
+If you use xz: 
+
+```
+sudo apt-get install liblzma-dev
+```

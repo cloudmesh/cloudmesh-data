@@ -8,8 +8,10 @@ import tempfile
 import typing
 
 
+
 """
-benchmark can be obtained with 
+BUG: benchmark can be obtained with (this should also work just n a single file not just a dir
+BUG: the lzma missing library bug should be caught and automatically the native method be used ... 
 
 d = Data()
 d.compress("dirname")
@@ -159,15 +161,27 @@ class Data:
         r = f"{location}"
         return r
 
-    def compress(self, src: str, out: str = None, level: int = 5):
-        """Compress an archive
-
+    def compress(self, source: str, destination: str = None, level: int = 5):
+        """
         Public mechanism to compress a directory or single file using the
         instance configured algorithm in set in self.config['algorithm'].
+        
+        :param source: 
+        :type source: 
+        :param destination: 
+        :type destination: 
+        :param level: 
+        :type level: 
+        :return: 
+        :rtype: 
+        """
+        """Compress an archive
+        please convert to previous looking docstring
+
 
         Args:
-            src(str): the path to the source file to compress
-            out(str): the path to write the compressed file to
+            source(str): the path to the source file to compress
+            destination(str): the path to write the compressed file to
             level(int): index for compression level (1-9, where 1 is the least
                 and 9 is the most)
 
@@ -177,16 +191,16 @@ class Data:
         if self.config['sep_opts']:
             with tempfile.TemporaryDirectory() as tempd:
                 self.compress_file(
-                    src=self.tape(os.path.join(tempd, out),
-                                  filename=out),
-                    out=out)
+                    source=self.tape(os.path.join(tempd, destination),
+                                  destination=destination),
+                    destination=destination)
         else:
             if self._native_tar:
-                self._os_compress_dir(src, out=out)
+                self._os_compress_dir(source, destination=destination)
             else:
-                self._python_compress_dir(src, out=out, level=level)
+                self._python_compress_dir(source, destination=destination, level=level)
 
-    def tape(self, location: str, filename: str = None):
+    def tape(self, source: str, destination: str = None):
         """Creates a tar file
 
         This method recursively collects files from the specified location
@@ -194,54 +208,54 @@ class Data:
         applying any compression.
 
         Args:
-            location(str): the path to the directory or file to include into
+            source(str): the path to the directory or file to include into
                 the tape archive.
-            filename(str): the path to use when writing the tape archive file.
+            destination(str): the path to use when writing the tape archive file.
 
         Returns:
             str: The name of the outputted tape archive.
 
         """
         if self.config['native']:
-            name = self._os_tape_dir(location, filename)
+            name = self._os_tape_dir(source, destination)
         else:
-            name = self._python_tape_dir(location, filename)
+            name = self._python_tape_dir(source, destination)
         return name
 
-    def compress_file(self, src: str, out: str = None):
+    def compress_file(self, source: str, destination: str = None):
         """Compress a single file
 
-        Creates a compressed archive from the src and writes it to the path
-        out.  Note, this method is designed to work on a single-file only,
+        Creates a compressed archive from the source and writes it to the path
+        destination.  Note, this method is designed to work on a single-file only,
         and is designed to work with self.tape.
 
         Args:
-            src(str): the path to the source file to compress
-            out(str): the path to write the compressed file to.
+            source(str): the path to the source file to compress
+            destination(str): the path to write the compressed file to.
 
         Returns:
             str: the path to the compressed file
 
         """
         if self.config['native']:
-            name = self._os_compress_file(src, out)
+            name = self._os_compress_file(source, destination)
         else:
-            name = self._python_compress_file(src, out)
+            name = self._python_compress_file(source, destination)
         return name
 
-    def _os_tape_dir(self, location, out):
+    def _os_tape_dir(self, location, destination):
         raise NotImplementedError("Code not implemented yet")
 
-    def _os_compress_file(self, src, out):
+    def _os_compress_file(self, source, destination):
         raise NotImplementedError("Code not implemented yet")
 
-    def _python_tape_dir(self, location, out):
+    def _python_tape_dir(self, location, destination):
         raise NotImplementedError("Code not implemented yet")
 
-    def _python_compress_file(self, file, out):
+    def _python_compress_file(self, file, destination):
         raise NotImplementedError("Code not implemented yet")
 
-    def _os_compress_dir(self, location: str, out: str):
+    def _os_compress_dir(self, location: str, destination: str):
         """Use os recursive compression
 
         Archives all files located under directory and compresses their
@@ -250,7 +264,7 @@ class Data:
         Args:
             location(str): The directory to scan for files to archive and
                 compress
-            out(str): The path to write the compressed archive to.
+            destination(str): The path to write the compressed archive to.
 
         Returns:
             str: The path to the archive file.
@@ -262,7 +276,7 @@ class Data:
         :param location: 
         :return: 
         """
-        name = location.replace("/", "-") if out is None else out
+        name = location.replace("/", "-") if destination is None else destination
         self._start("compress", name, self.tag)
         # deal with if destination already exists
         command = f"{self.COMPRESS} {name} {location}"
@@ -271,8 +285,8 @@ class Data:
         return name
 
     def _python_compress_dir(self,
-                             location: str,
-                             out: str,
+                             source: str,
+                             destination: str,
                              level: typing.Union[str, int] = None) -> tarfile.TarFile:
         """Use python recursive compression
 
@@ -280,8 +294,8 @@ class Data:
         into an archive.
 
         Args:
-            location(str): The path to scan for files to include in the archive
-            out(str): the path to write the archive out to.
+            source(str): The path to scan for files to include in the archive
+            destination(str): the path to write the archive destination to.
             level(int): The level of compression to apply.  From 0 to 9, where
                 0 is no compression and 9 is extreme compression.
 
@@ -294,23 +308,23 @@ class Data:
             extract=False,
             level=level
         )
-        with tarfile.open(out, **taropts) as tf:
-            tf.add(location, recursive=True)
+        with tarfile.open(destination, **taropts) as tf:
+            tf.add(source, recursive=True)
 
         return tf
 
     def uncompress_expand(self,
-                          file: str,
-                          path: str = None,
+                          source: str,
+                          destination: str = None,
                           force: bool = False) -> str:
         """General purpose decompression command
 
-        Decompresses a compressed tar file using the instance's specified
+        Decompresses a compressed tar source using the instance's specified
         algorithm.
 
         Args:
-            file(str): The path to the compressed archive file
-            path(str): The path to expand the archive into.  If not specified,
+            source(str): The path to the compressed archive file
+            destination(str): The path to expand the archive into.  If not specified,
                 the current directory will be used (e.g. ".")
             force(bool): disables FileExistsError if path already exists.
 
@@ -318,35 +332,35 @@ class Data:
             str: the path to where the archive was expanded.
 
         """
-        if path is None:
-            out = "."
+        if destination is None:
+            destination = "."
         else:
-            out = path
+            destination = destination
 
-        if not os.path.exists(out):
-            os.makedirs(out, exist_ok=True)
+        if not os.path.exists(destination):
+            os.makedirs(destination, exist_ok=True)
         elif force:
             pass
         else:
             raise FileExistsError("Destination exists!")
 
-        self._start("uncompress", self.tag, file)
+        self._start("uncompress", self.tag, source)
         if self.config['native']:
-            self._os_uncompress_expand(file, out)
+            self._os_uncompress_expand(source, destination)
         else:
-            self._python_uncompress_expand(file, out)
-        self._stop("uncompress", self.tag, file)
-        return out
+            self._python_uncompress_expand(source, destination)
+        self._stop("uncompress", self.tag, source)
+        return destination
 
-    def _os_uncompress_expand(self, file: str, path: str):
+    def _os_uncompress_expand(self, source: str, destination: str):
         """Uses OS decompression tools
 
         Uncompresses and expands archive to the specified path using the OS
         native tooling.
 
         Args:
-            file(str): The file to decompress and expand.
-            path(str): The path to expand the archive into.
+            source(str): The source to decompress and expand.
+            destination(str): The path to expand the archive into.
 
         Returns:
             str: the path that the archive was expanded into.
@@ -357,19 +371,19 @@ class Data:
         :param location: 
         :return: 
         """
-        command = f"{self.UNCOMPRESS} {file} -C {path}"
+        command = f"{self.UNCOMPRESS} {source} -C {destination}"
         self._run(command)
-        return path
+        return destination
 
-    def _python_uncompress_expand(self, file: str, path: str = None):
+    def _python_uncompress_expand(self, source: str, destination: str = None):
         """Uses python's modules for decompression tools
 
         Uncompresses and expands archive to the specified path using pythons
         internal module tooling.
 
         Args:
-            file(str): The file to decompress and expand.
-            path(str): The path to expand the archive into.
+            source(str): The source to decompress and expand.
+            destination(str): The path to expand the archive into.
 
         Returns:
             str: the path that the archive was expanded into.
@@ -378,9 +392,9 @@ class Data:
             self.config['algorithm'],
             extract=True
         )
-        with tarfile.open(file, **taropts) as tf:
-            tf.extractall(path)
-        return path
+        with tarfile.open(source, **taropts) as tf:
+            tf.extractall(destination)
+        return destination
 
     @staticmethod
     def _test_os_bin(cmd: str) -> bool:
@@ -412,7 +426,7 @@ class Data:
                 command.
             extract(bool): Set to True to return configurations for extracting
                 a tarfile.  Set to False to return configuration for creating
-                a tarfile.
+                a tarsource.
             level(int): Specifies the level of compression to use for a specific
                 algorithm.
 
