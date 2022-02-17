@@ -77,7 +77,11 @@ class Data:
             'level': 9
         },
     }
-    # command = Data._COMMAND["xz"]["dir"]["compress"].format(SOURCE="a", DESTINATION="a")
+    # kind = "xz"
+    # if os.path.isdir("a")
+    #    command = Data._COMMAND[kind]["dir"]["compress"].format(SOURCE="a", DESTINATION="a")
+    # else:
+    #    command = command = Data._COMMAND[kind]["file"]["compress"].format(SOURCE="a", DESTINATION="a")
     # self._run(command)
 
     _OSBIN: typing.Final = {
