@@ -18,7 +18,7 @@ class DataCommand(PluginCommand):
           Usage:
                 data compress [--benchmark] [--algorithm=KIND] [--level=N] [--native] [--sepopts] --source=SOURCE [--destination=DESTINATION]
                 data uncompress [--benchmark] [--native] [--sepopts] [--force] [--] --source=SOURCE [--destination=DESTINATION]
-                data info LOCATION
+                data info --source=SOURCE
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
           Example if destination in compress is not specifued the destination will be set to
@@ -68,8 +68,8 @@ class DataCommand(PluginCommand):
                       sep_opts=arguments.sepopts)
 
         if arguments.compress:
-            arguments.LOCATION = path_expand(arguments.LOCATION)
-            arguments.FILE = path_expand(arguments.FILE)
+            arguments.source = path_expand(arguments.source)
+            arguments.destination = path_expand(arguments.destination)
 
             worker.compress(source=arguments.source,
                             destination=arguments.destination,
@@ -87,5 +87,9 @@ class DataCommand(PluginCommand):
                 force=arguments.force)
             if arguments.benchmark:
                 worker.benchmark()
+        elif arguments["--info"]:
+            arguments.source = path_expand(arguments.source)
+
+            raise NotImplementedError ("the info command is not yet implemented")
 
         return ""

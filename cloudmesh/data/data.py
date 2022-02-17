@@ -198,7 +198,10 @@ class Data:
             if self._native_tar:
                 self._os_compress_dir(source, destination=destination)
             else:
-                self._python_compress_dir(source, destination=destination, level=level)
+                try:
+                    self._python_compress_dir(source, destination=destination, level=level)
+                except tarfile.CompressionError:
+                    self._os_compress_dir(source, destination=destination)
 
     def tape(self, source: str, destination: str = None):
         """Creates a tar file
