@@ -136,12 +136,12 @@ class Data:
         name = location.replace("/", "-")
         StopWatch.stop(f"{kind}{tag} {name}")
 
-    def _run(self, command):
+    def _run(self, command, driver=Shell.run):
         if self.config['dryrun']:
             r = command
             print(command)
         else:
-            r = Shell.run(command)
+            r = driver(command)
         return r
 
     @staticmethod
@@ -237,8 +237,8 @@ class Data:
         #return name
         # TODO: fix me
         self._start("compress", "",  self.tag)
-        command = f"tar cf {destination} {source}"
-        r = self._run(command)
+        command = f"tar cfv {destination} {source}"
+        r = self._run(command, driver=os.system)
         self._stop("compress", "",  self.tag)
         return r
 
@@ -267,7 +267,7 @@ class Data:
         self._start("compress", name, self.tag)
         # deal with if destination already exists
         command = f"{self.COMPRESS} {name} {location}"
-        self._run(command)
+        self._run(command, driver=os.system)
         self._stop("compress", name, self.tag, )
         return name
 
