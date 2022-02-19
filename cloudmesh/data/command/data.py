@@ -1,11 +1,12 @@
 import sys
 
-from cloudmesh.shell.command import command
-from cloudmesh.shell.command import PluginCommand
-from cloudmesh.common.debug import VERBOSE
-from cloudmesh.shell.command import map_parameters
-from cloudmesh.data.data import CompressExtensions, PythonData, NativeData
 from cloudmesh.common.util import path_expand
+from cloudmesh.data.data import CompressExtensions
+from cloudmesh.data.data import NativeData
+from cloudmesh.data.data import PythonData
+from cloudmesh.shell.command import PluginCommand
+from cloudmesh.shell.command import command
+from cloudmesh.shell.command import map_parameters
 
 
 class DataCommand(PluginCommand):
@@ -22,12 +23,12 @@ class DataCommand(PluginCommand):
                 data info --source=SOURCE
 
           Compresses the specified item. The default algorithm is xz, Alternative it gz.
-          Example if destination in compress is not specifued the destination will be set to
+          Example if destination in compress is not specified the destination will be set to
           SOURCE.tar.xz
 
           Arguments:
-              SOURCE       the file source on which compress or uncompree is aplied
-              DESTINATION  the detination file on which compress or uncompress is performed
+              SOURCE       the file source on which compress or uncompress is aplied
+              DESTINATION  the destination file on which compress or uncompress is performed
 
           Options:
               -h                help
@@ -40,7 +41,7 @@ class DataCommand(PluginCommand):
 
         """
 
-        # TODO: comress should be
+        # TODO: compress should be
         #                 data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE... [--destination=DESTINATION]
         # TODO: as far as I can tell sepopts is not needed .... do not have two steps ...
 
@@ -62,7 +63,6 @@ class DataCommand(PluginCommand):
                        "csv",
                        "dryrun")
 
-        VERBOSE(arguments)
 
         if arguments.algorithm:
             algorithm = arguments.algorithm

@@ -1,5 +1,6 @@
 import os
 
+
 def random_file(filename, size):
     """
     generate a binary with given size
@@ -12,9 +13,11 @@ def random_file(filename, size):
         f.write(os.urandom(s))
     print(f'Created random file of size: {size}')
 
+
 def ascii_file(filename, size, c="0"):
     """
-    generate a ascii with given size that only contains the char c
+    generate an ascii file with given size that only contains the char c
+
     :param filename: the filename
     :param size: the size in bytes
     :return: void
@@ -24,8 +27,8 @@ def ascii_file(filename, size, c="0"):
         f.write(s * b'{c}')
     print(f'Created file with {c} of size: {size}')
 
-def get_real_size(size):
 
+def get_real_size(size):
     KB = int(1024)
     MB = int(KB ** 2)  # 1,048,576
     GB = int(KB ** 3)  # 1,073,741,824

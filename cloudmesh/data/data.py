@@ -27,7 +27,7 @@ d.info("dirname")
 
 StopWatch.benchmark()
 
-Notes: I have forgotten if our Shell.run can do pipes. I remember one ofthem can actually do it
+Notes: I have forgotten if our Shell.run can do pipes. I remember one of them can actually do it
 
 DIR could also be a single file
 
@@ -134,7 +134,7 @@ class Data:
         StopWatch.stop(f"{kind}{tag} {name}")
 
     def _run(self, command, driver=Shell.run):
-        """CLI Command Runner with driver subsitution.
+        """CLI Command Runner with driver substitution.
 
         Runs `command` using the specified `driver` on the system's path.
         If the value of `self._dryrun` is set to true, the command does not
@@ -336,10 +336,10 @@ class NativeData(Data):
                 compress
             destination(str): The path to write the compressed archive to.
             type_(str): Does nothing in this implementation, but is made
-                availible to match inheriting signature.
+                available to match inheriting signature.
             level(typing.Union[str,int]): Specifies the level of compression
                 to apply (more accurately, it sets the block size used when
-                building the compression dictionary.
+                building the compression dictionary).
 
         Returns:
             str: The path to the archive file.
