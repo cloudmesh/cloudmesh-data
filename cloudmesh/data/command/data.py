@@ -1,10 +1,10 @@
-import os
+import sys
 
 from cloudmesh.shell.command import command
 from cloudmesh.shell.command import PluginCommand
 from cloudmesh.common.debug import VERBOSE
 from cloudmesh.shell.command import map_parameters
-from cloudmesh.data.data import Data
+from cloudmesh.data.data import CompressExtensions, PythonData, NativeData
 from cloudmesh.common.util import path_expand
 
 
@@ -32,7 +32,7 @@ class DataCommand(PluginCommand):
           Options:
               -h                help
               --level=N         the level of compression to apply 0 (no compression) to 9 (extreme)
-              --algorithm=KIND  the algorithm to use; gz, bzip2, xz [default: xz]
+              --algorithm=KIND  the algorithm to use; gz, bzip2, xz
               --force           disables file overwrite protection [default: False].
 
           Description:
@@ -57,16 +57,30 @@ class DataCommand(PluginCommand):
                        "algorithm",
                        "source",
                        "destination",
-                       "native",
                        "level",
                        "force",
                        "csv",
-                       "dryrun",
-                       "sepopts")
+                       "dryrun")
 
         VERBOSE(arguments)
 
-        worker = Data(algorithm=arguments.algorithm, dryrun=arguments.dryrun)
+        if arguments.algorithm:
+            algorithm = arguments.algorithm
+        else:
+            if arguments.compress:
+                algorithm = CompressExtensions.detect(arguments.destination)
+            else:
+                algorithm = CompressExtensions.detect(arguments.source)
+
+            if algorithm is None:
+                algorithm = 'xz'
+
+        try:
+            worker = NativeData(algorithm=algorithm, dryrun=arguments.dryrun)
+        except RuntimeError as e:
+            print(e, file=sys.stderr)
+            worker = PythonData(algorithm=algorithm, dryrun=arguments.dryrun)
+
 
         if arguments.compress:
             arguments.source = path_expand(arguments.source)
@@ -82,7 +96,9 @@ class DataCommand(PluginCommand):
             arguments.source = path_expand(arguments.source)
             arguments.destination = path_expand(arguments.destination)
 
-            worker.uncompress_expand(
+            print("In uncompress")
+            print(type(worker))
+            worker.uncompress(
                 source=arguments.source,
                 destination=arguments.destination,
                 force=arguments.force)
@@ -90,7 +106,6 @@ class DataCommand(PluginCommand):
                 worker.benchmark()
 
         elif arguments.info:
-            import humanize
             arguments.source = path_expand(arguments.source)
             _info_dest = worker.get_info(arguments.source)
             print(_info_dest, arguments.source)
@@ -99,7 +114,6 @@ class DataCommand(PluginCommand):
                 source = arguments.source.rsplit(".", 1)[0]
                 _info_source = worker.get_info(source)
                 print(_info_source, source)
-
 
                 s = _info_source.split()[0]
                 d = _info_dest.split()[0]
