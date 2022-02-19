@@ -1,11 +1,20 @@
 from cloudmesh.common.Shell import Shell
 from cloudmesh.common.StopWatch import StopWatch
 
+import bz2
+import dataclasses
+import gzip
 import os
 import shutil
+import sys
 import tarfile
-import tempfile
 import typing
+
+try:
+    import lzma
+except ImportError as e:
+    print("System not built with LZMA support, system will only support native calls",
+          file=sys.stderr)
 
 """
 BUG: benchmark can be obtained with (this should also work just n a single file not just a dir
@@ -36,47 +45,42 @@ tar xf DIR.tar.gz
 
 """
 
+@dataclasses.dataclass
+class CompressExtensions:
+    gz = ('.gz',)
+    bz2 = ('.bz2',)
+    xz = ('.xz',)
+    tar = ('.tar',)
+    targz = ('.tar.gz', '.tgz')
+    tarbz2 = ('.tar.bz2', '.tbz2')
+    tarxz = ('.tar.xz', '.txz')
+
+
+
+    @staticmethod
+    def detect(path):
+        DEBUG = True
+        ret = None
+        if path.endswith(CompressExtensions.targz):
+            ret = 'targz'
+        elif path.endswith(CompressExtensions.tarbz2):
+            ret = 'tarbz2'
+        elif path.endswith(CompressExtensions.tarxz):
+            ret = 'tarxz'
+        elif path.endswith(CompressExtensions.gz):
+            ret = "gz"
+        elif path.endswith(CompressExtensions.bz2):
+            ret = 'bz2'
+        elif path.endswith(CompressExtensions.xz):
+            ret = 'xz'
+        elif path.endswith(CompressExtensions.tar):
+            ret = "tar"
+        else:
+            ret = None
+        return ret
+
 
 class Data:
-    _COMMAND = {
-        'xz': {
-            "dir": {
-                'decompress': "xzcat {SOURCE}.tar.xz | tar x",
-                'compress': "tar c {SOURCE} | xz > {DESTINATION}.tar.xz",
-            },
-            "file": {
-                'compress': "xz {DESTINATION}.xz",
-                'decompress': "xz --decompress {SOURCE}.xz",
-            },
-            'suffix': 'xz',
-            'level': 7
-        },
-        'bzip2': {
-            "dir": {
-                'decompress': 'bzcat {SOURCE}.bz2 | tar x',
-                'compress': 'tar c {SOURCE} | bzip2 > {DESTINATION}.tar.gz',
-            },
-            "file": {
-
-                'decompress': 'bunzip {SOURCE}.bz2',
-                'compress': 'bzip2 {SOURCE}',
-            },
-            'suffix': 'bz2',
-            'level': 9
-        },
-        'gz': {
-            "dir": {
-                'decompress': 'tar xf {SOURCE}.gz',
-                'compress': "tar c {SOURCE} | gzip > {DESTINATION}.tar.gz",
-            },
-            "file": {
-                'decompress': 'gunzip {SOURCE}.gz',
-                'compress': "gzip {SOURCE} ",
-            },
-            'suffix': 'gz',
-            'level': 9
-        },
-    }
     # kind = "xz"
     # if os.path.isdir("a")
     #    command = Data._COMMAND[kind]["dir"]["compress"].format(SOURCE="a", DESTINATION="a")
@@ -91,53 +95,6 @@ class Data:
     #    archive = "file"
     # source = SOURCE.split(".tar")[0]
     # command = Data._COMMAND[kind][archive]["decompress"].format(SOURCE=source)
-
-    _OSBIN: typing.Final = {
-        'xz': {
-            'decompress': 'xzcat',
-            'compress': 'xz',
-            'suffix': 'xz',
-            'level': 7
-        },
-        'bzip2': {
-            'decompress': 'bzcat',
-            'compress': 'bzip2',
-            'suffix': 'bz2',
-            'level': 9
-        },
-        'gz': {
-            'decompress': 'zcat',
-            'compress': 'gzip',
-            'suffix': 'gz',
-            'level': 9
-        },
-        'tar': {
-            'command': 'tar',
-            'switches': {
-                'gz': {
-                    'compress': 'zcf',
-                    'decompress': 'zxf',
-                    'suffix': 'tar.gz'
-                },
-                'bzip': {
-                    'compress': 'jcf',
-                    'decompress': 'jxf',
-                    'suffix': 'tar.bz2'
-                },
-                'xz': {
-                    'compress': 'Jcf',
-                    'decompress': 'Jxf',
-                    'suffix': 'tar.xz'
-                },
-                'none': {
-                    'compress': 'cf',
-                    'decompress': 'xf',
-                    'suffix': 'tar'
-                }
-            }
-        }
-    }
-
     def __init__(self,
                  algorithm: str = "xz",
                  dryrun: bool = False,
@@ -146,33 +103,22 @@ class Data:
                  *args,
                  **kwargs):
 
-        # Test if native can be used.  If tar is missing, fall back to
-        # native python method.
-        self._native_tar = self._test_os_bin('tar') or self._test_os_bin('tar.exe')
-
         # Establish instance-level configuration settings
+        self._algo: typing.Final = 'xz' if algorithm is None else algorithm
+        self._tag: typing.Final = "" if tag is None else f" {tag}"
+        self._dryrun: typing.Final = dryrun
+        self._force: typing.Final = force
         self.config = {
-            'algorithm': 'xz' if algorithm is None else algorithm,
-            'dryrun': dryrun,
-            'force': force,
-            'tag': tag,
-            'native': self._native_tar
+            'algorithm': self._algo,
+            'dryrun': self._dryrun,
+            'force': self._force,
+            'tag': self._tag
         }
         self.config.update({'args': args,
                             'kwargs': kwargs})
 
-        if tag is None:
-            self.tag = ""
-        else:
-            self.tag = " " + tag
-
-        # Setup native commands for future usage
-        self.TAPE = self._OSBIN['tar']['command']
-        self.COMPRESS = f"tar -{self._OSBIN['tar']['switches'][self.config['algorithm']]['compress']}"
-        self.UNCOMPRESS = f"tar -{self._OSBIN['tar']['switches'][self.config['algorithm']]['decompress']}"
-        self.ending = f"tar -{self._OSBIN['tar']['switches'][self.config['algorithm']]['suffix']}"
-
-    def benchmark(self):
+    @staticmethod
+    def benchmark():
         # setting it to tru so it looks better
         StopWatch.timer_status["command"] = True
         StopWatch.benchmark()
@@ -188,9 +134,23 @@ class Data:
         StopWatch.stop(f"{kind}{tag} {name}")
 
     def _run(self, command, driver=Shell.run):
-        if self.config['dryrun']:
+        """CLI Command Runner with driver subsitution.
+
+        Runs `command` using the specified `driver` on the system's path.
+        If the value of `self._dryrun` is set to true, the command does not
+        run.
+
+        Args:
+            command: The command to run
+            driver: A function which implements the execution of the passed
+                command.  By default, uses `cloudmesh.common.Shell`.
+
+        Returns:
+            str: Either the output from the command's run, or returns the
+                string of the command as it was passed.
+        """
+        if self._dryrun:
             r = command
-            print(command)
         else:
             r = driver(command)
         return r
@@ -223,140 +183,43 @@ class Data:
         :return:
         :rtype:
         """
-        if os.path.isdir(source):
-            self.compress_dir(source, destination, level)
-        else:
-            # TODO: why is the level missing here?
-            self.compress_file(source, destination)
-
-    def compress_dir(self, source: str, destination: str = None, level: int = 5):
-        """
-        Public mechanism to compress a directory or single file using the
-        instance configured algorithm in set in self.config['algorithm'].
-        
-        :param source: 
-        :type source: 
-        :param destination: 
-        :type destination: 
-        :param level: 
-        :type level: 
-        :return: 
-        :rtype: 
-        """
-        """Compress an archive
-        please convert to previous looking docstring
-
-
-        Args:
-            source(str): the path to the source file to compress
-            destination(str): the path to write the compressed file to
-            level(int): index for compression level (1-9, where 1 is the least
-                and 9 is the most)
-
-        Returns:
-            None: method provides no feedback on operation.
-        """
         # select native method
-        if self._native_tar:
-            self._os_compress_dir(source, destination=destination)
+        if os.path.isdir(source):
+            compress_type = "directory"
         else:
-            # try python method first, but if lzm library is missing, use native method
-            # TODO: source can be a file or a directory, so the method here seems incomplete as it
-            #  does not capture that it can just be a file
-            try:
-                self._python_compress_dir(source, destination=destination, level=level)
-            except tarfile.CompressionError:
-                self._os_compress_dir(source, destination=destination)
+            compress_type = "file"
 
-    def compress_file(self, source: str, destination: str = None):
-        """Compress a single file
+        compress_level = 5 if level is None else level
+        args = dict(source=source,
+                    destination=destination,
+                    level=compress_level,
+                    type_=compress_type)
 
-        Creates a compressed archive from the source and writes it to the path
-        destination.  Note, this method is designed to work on a single-file only,
-        and is designed to work with self.tape.
+        self._compress(**args)
 
-        Args:
-            source(str): the path to the source file to compress
-            destination(str): the path to write the compressed file to.
+    def _compress(self, *args, **kwargs):
+        """Compress method to be inherited with alternate implementations
 
-        Returns:
-            str: the path to the compressed file
-
-        """
-        # if self.config['native']:
-        #    name = self._os_compress_file(source, destination)
-        # else:
-        # name = self._python_compress_file(source, destination)
-        # return name
-        # TODO: fix me
-        self._start("compress", "", self.tag)
-        command = f"tar cfv {destination} {source}"
-        r = self._run(command, driver=os.system)
-        self._stop("compress", "", self.tag)
-        return r
-
-    def _os_compress_dir(self, location: str, destination: str):
-        """Use os recursive compression
-
-        Archives all files located under directory and compresses their
-        data in one step.
+        This is a stub method that should be overridden by an implementation
+        class.  For calling compress, use the `Data.compress()` function.
 
         Args:
-            location(str): The directory to scan for files to archive and
-                compress
-            destination(str): The path to write the compressed archive to.
+            *args(typing.Any): Arguments for implementation class
+            **kwargs(typing.Any): keyword arguments for implementation class
 
         Returns:
-            str: The path to the archive file.
+            typing.Any: Deferred to implementation class.
+
+        Raises:
+            RuntimeError: Cautions the user that they are using a method
+            that must be implemented for the class.
         """
+        raise RuntimeError("No compress method implemented.")
 
-        """
-        Note we may want to do this isn one step using the -z flag to tar and specifying the flag to tar 
-        so we do everything in one step. which ought to be faster
-        :param location: 
-        :return: 
-        """
-        name = location.replace("/", "-") if destination is None else destination
-        self._start("compress", name, self.tag)
-        # deal with if destination already exists
-        command = f"{self.COMPRESS} {name} {location}"
-        self._run(command, driver=os.system)
-        self._stop("compress", name, self.tag, )
-        return name
-
-    def _python_compress_dir(self,
-                             source: str,
-                             destination: str,
-                             level: typing.Union[str, int] = None) -> tarfile.TarFile:
-        """Use python recursive compression
-
-        Uses built-in python libraries to recursively add and compress files
-        into an archive.
-
-        Args:
-            source(str): The path to scan for files to include in the archive
-            destination(str): the path to write the archive destination to.
-            level(int): The level of compression to apply.  From 0 to 9, where
-                0 is no compression and 9 is extreme compression.
-
-        Returns:
-            tarfile.TarFile: the tarfile object that was created.
-        """
-
-        taropts = self._tarfile_bootstrap(
-            self.config['algorithm'],
-            extract=False,
-            level=level
-        )
-        with tarfile.open(destination, **taropts) as tf:
-            tf.add(source, recursive=True)
-
-        return tf
-
-    def uncompress_expand(self,
-                          source: str,
-                          destination: str = None,
-                          force: bool = False) -> str:
+    def uncompress(self,
+                   source: str,
+                   destination: str = None,
+                   force: bool = False) -> str:
         """General purpose decompression command
 
         Decompresses a compressed tar source using the instance's specified
@@ -372,27 +235,132 @@ class Data:
             str: the path to where the archive was expanded.
 
         """
-        if destination is None:
-            destination = "."
-        else:
-            destination = destination
+        type_ = "directory" if source.endswith('.tar') else "file"
 
-        if not os.path.exists(destination):
-            os.makedirs(destination, exist_ok=True)
-        elif force:
-            pass
-        else:
-            raise FileExistsError("Destination exists!")
+        command = dict(source=source,
+                       destination=destination,
+                       type_=type_,
+                       force=force)
 
-        self._start("uncompress", self.tag, source)
-        if self.config['native']:
-            self._os_uncompress_expand(source, destination)
-        else:
-            self._python_uncompress_expand(source, destination)
-        self._stop("uncompress", self.tag, source)
+        self._uncompress(**command)
+
+    def _uncompress(self, *args, **kwargs):
+        """Uncompress method to be inherited with alternate implementations
+
+        This is a stub method that should be overridden by an implementation
+        class.  For calling compress, use the `Data.uncompress()` function.
+
+        Args:
+            *args(typing.Any): Arguments for implementation class
+            **kwargs(typing.Any): keyword arguments for implementation class
+
+        Returns:
+            typing.Any: Deferred to implementation class.
+
+        Raises:
+            RuntimeError: Cautions the user that they are using a method
+            that must be implemented for the class.
+        """
+        raise RuntimeError("No uncompress method implemented.")
+
+
+class NativeData(Data):
+    cmds: typing.Final = {
+        'gz': {
+            'cmds': 'gzip zcat'.split(),
+            'compress': 'gzip -{LEVEL} {SOURCE} -c > {DESTINATION}',
+            'uncompress': 'zcat {SOURCE} > {DESTINATION}',
+            'level': 7
+        },
+        'bz2': {
+            'cmds': 'bzip2 bzcat'.split(),
+            'compress': 'bzip2 -{LEVEL} {SOURCE} -c > {DESTINATION}',
+            'uncompress': 'bzcat {SOURCE} > {DESTINATION}',
+            'level': 5
+        },
+        'xz': {
+            'cmds': 'xz xzcat'.split(),
+            'compress': 'xz {SOURCE} -c > {DESTINATION}',
+            'uncompress': 'xzcat {SOURCE} > {DESTINATION}',
+            'level': 5
+        },
+        "tar": {
+            'compress'   : 'tar -cf {DESTINATION} {SOURCE}',
+            'uncompress' : 'tar -xf {SOURCE} -C {DESTINATION}',
+        },
+        'targz': {
+            'cmds': ('tar', ),
+            'compress': 'tar -zcf {DESTINATION} {SOURCE}',
+            'uncompress': 'tar -zxf {SOURCE} -C {DESTINATION}',
+        },
+        'tarbz2': {
+            'cmds': ('tar', ),
+            'compress': 'tar -jcf {DESTINATION} {SOURCE}',
+            'uncompress'  : 'tar -jxf {SOURCE} -C {DESTINATION}',
+        },
+        'tarxz': {
+            'cmds': ('tar', ),
+            'compress': 'tar -Jcf {DESTINATION} {SOURCE}',
+            'uncompress'  : 'tar -Jxf {SOURCE} -C {DESTINATION}',
+        }
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Native compression data implementation that uses OS tooling on the path.
+
+        This is an implementation of `cloudmesh.data.Data` that provides the
+        `_compress` and `_uncompress` implementations using tools typically
+        provided in a shell-like environment.  The class has a saftey mechanism
+        that detects if the necessary tools are present on the system path, and
+        if they are not, will raise a `RuntimeError`.
+
+        """
+        cli_tools = self.cmds[kwargs['algorithm']]['cmds']
+        for tool in cli_tools:
+            if not shutil.which(tool):
+                raise RuntimeError(f"Missing native command toolchain {tool}")
+        super().__init__(*args, **kwargs)
+
+    def _compress(self,
+                  source: str,
+                  destination: str,
+                  type_: str,
+                  level: typing.Union[str, int] = None) -> str:
+        """Use os recursive compression
+
+        Archives all files located under directory and compresses their
+        data in one step.
+
+        Args:
+            source(str): The directory to scan for files to archive and
+                compress
+            destination(str): The path to write the compressed archive to.
+            type_(str): Does nothing in this implementation, but is made
+                availible to match inheriting signature.
+            level(typing.Union[str,int]): Specifies the level of compression
+                to apply (more accurately, it sets the block size used when
+                building the compression dictionary.
+
+        Returns:
+            str: The path to the archive file.
+        """
+        name = source.replace("/", "-") if destination is None else destination
+
+        command = self.cmds[self._algo]['compress'].format(
+            SOURCE=source,
+            DESTINATION=destination,
+            LEVEL=level
+            )
+        self._start("compress", name, self._tag)
+        self._run(command, driver=os.system)
+        self._stop("compress", name, self._tag, )
         return destination
 
-    def _os_uncompress_expand(self, source: str, destination: str):
+    def _uncompress(self,
+                    source: str,
+                    destination: str,
+                    type_: str,
+                    force: bool):
         """Uses OS decompression tools
 
         Uncompresses and expands archive to the specified path using the OS
@@ -401,21 +369,43 @@ class Data:
         Args:
             source(str): The source to decompress and expand.
             destination(str): The path to expand the archive into.
+            type_(str): Does nothing in this implementation.  Parameter provided
+                to match the calling signature
+            force(bool): If True, the uncompress method will override any
+                existing files.  If False, if the destination already exists,
+                it will raise an exception.  NOT IMPLEMENTED.
 
         Returns:
             str: the path that the archive was expanded into.
+
+        Raises:
+
         """
-        """
-        Note we may want to do this isn one step using the -z flag to tar and specifying the flag to tar 
-        so we do everything in one step. which ought to be faster
-        :param location: 
-        :return: 
-        """
-        command = f"{self.UNCOMPRESS} {source} -C {destination}"
+        os.makedirs(destination, exist_ok=True)
+        command = self.cmds[self._algo]['uncompress'].format(
+            SOURCE=source,
+            DESTINATION=destination
+        )
         self._run(command)
         return destination
 
-    def _python_uncompress_expand(self, source: str, destination: str = None):
+
+class PythonData(Data):
+
+    def __init__(self, *args, **kwargs):
+        """Python compression implementation that uses python libraries part of the standard lib.
+
+        This is an implementation of `cloudmesh.data.Data` that provides the
+        `_compress` and `_uncompress` implementations using tools typically
+        implemented in the pythons standard library.
+        """
+        super().__init__(*args, **kwargs)
+
+    def _uncompress(self,
+                    source: str,
+                    destination: str = None,
+                    force: bool = False,
+                    type_: str = None):
         """Uses python's modules for decompression tools
 
         Uncompresses and expands archive to the specified path using pythons
@@ -424,37 +414,87 @@ class Data:
         Args:
             source(str): The source to decompress and expand.
             destination(str): The path to expand the archive into.
+            force(bool): If True, then if the destination exists the file will
+                be overridden. (NOT IMPLEMENTED).
+            type_(str): Specifies the final type of the destination parameter.
+                 One of "directory" or "file".
 
         Returns:
             str: the path that the archive was expanded into.
         """
-        taropts = self._tarfile_bootstrap(
-            self.config['algorithm'],
-            extract=True
-        )
-        with tarfile.open(source, **taropts) as tf:
-            tf.extractall(destination)
+        if type_ == "directory":
+            taropts = self._tarfile_bootstrap(
+
+                extract=True
+            )
+            with tarfile.open(source, **taropts) as tf:
+                tf.extractall(destination)
+        else:
+            if self._algo == "lzma":
+                with lzma.open(f"{source}", "rb") as f:
+                    with open(destination, 'wb') as out:
+                        shutil.copyfileobj(f, out)
+            elif self._algo == 'gz':
+                with gzip.open(f"{source}", "rb") as f:
+                    with open(destination, 'wb') as out:
+                        shutil.copyfileobj(f, out)
+            elif self._algo == 'bz2':
+                with bz2.open(f"{source}", "rb") as f:
+                    with open(destination, 'wb') as out:
+                        shutil.copyfileobj(f, out)
         return destination
 
-    @staticmethod
-    def _test_os_bin(cmd: str) -> bool:
-        """Tests if a command is on the path
+    def _compress(self,
+                  source: str,
+                  destination: str,
+                  type_: str,
+                  level: typing.Union[str, int] = None) -> str:
+        """Use python recursive compression
 
-        Performs a simple check to see if the specified command is on the
-        path and can be used.
+        Uses built-in python libraries to recursively add and compress files
+        into an archive.
 
         Args:
-            cmd(str): the name of the command to check for
+            source(str): The path to scan for files to include in the archive
+            destination(str): the path to write the archive destination to.
+            type_(str): Specifies the final type of the source parameter.
+                 One of "directory" or "file".
+            level(int): The level of compression to apply.  From 0 to 9, where
+                0 is no compression and 9 is extreme compression.
 
         Returns:
-            bool: True if the command is on the path, otherwise False.
+            str: the path to the compressed file.
         """
-        return shutil.which(cmd) is not None
+        name = source.replace("/", "-") if destination is None else destination
+        if type_ == "directory":
+            taropts = self._tarfile_bootstrap(
+                extract=False,
+                level=level
+            )
+            self._start("compress", name, self._tag)
+            with tarfile.open(destination, **taropts) as tf:
+                tf.add(source, recursive=True)
+            self._stop("compress", name, self._tag, )
+        elif type_ == "file":
+            self._start("compress", name, self._tag)
+            with open(source, 'rb') as f:
+                if self._algo == "lzma":
+                    with lzma.open(f"{destination}", "wb") as zf:
+                        shutil.copyfileobj(f, zf)
+                elif self._algo == 'gz':
+                    with gzip.open(f"{destination}", "wb") as zf:
+                        shutil.copyfileobj(f, zf)
+                elif self._algo == 'bz2':
+                    with bz2.open(f"{destination}", "wb") as zf:
+                        shutil.copyfileobj(f, zf)
+            self._stop("compress", name, self._tag)
+        else:
+            raise RuntimeError(f"Invalid path type {type_}")
+        return destination
 
-    @staticmethod
-    def _tarfile_bootstrap(algorithm: str = None,
+    def _tarfile_bootstrap(self,
                            extract: bool = False,
-                           level: int = None) -> typing.Dict[str, typing.Union[str, int]]:
+                           level: int = None,) -> typing.Dict[str, typing.Union[str, int]]:
         """tarfile configuration method
 
         Unifies multiple tarfile configuration options across several
@@ -462,8 +502,6 @@ class Data:
         of tarfile.Open objects.
 
         Args:
-            algorithm(str): The name of the algorithm to prepare the tarfile
-                command.
             extract(bool): Set to True to return configurations for extracting
                 a tarfile.  Set to False to return configuration for creating
                 a tarsource.
@@ -473,31 +511,27 @@ class Data:
         Returns:
             dict[str, Union[str,int]]:
         """
-        if extract:
-            mode = 'r'
-        else:
-            mode = 'x'
+        mode = 'r' if extract else 'x'
         compression_create_types = {
-            'xz': f'{mode}:xz',
-            'gz': f'{mode}:gz',
-            'bz2': f'{mode}:bz2',
-            None: mode
+            'tarxz' : f'{mode}:xz',
+            'targz' : f'{mode}:gz',
+            'tarbz2': f'{mode}:bz2',
+            'tar': f'{mode}:'
         }
         tarops = {
-            'mode': compression_create_types[algorithm],
+            'mode': compression_create_types[self._algo],
         }
 
         if level is None:
-            compress = 7
+            compress = 5
         else:
             compress = level
 
         if not extract:
-            if algorithm in ('gz', 'bz2'):
+            if self._algo in ('targz', 'tarbz2'):
                 tarops.update(dict(compresslevel=compress))
-            elif algorithm == 'xz':
+            elif self._algo == 'tarxz':
                 tarops.update(dict(preset=compress))
             else:
-                pass
-
+                raise RuntimeError(f"Unsupported algorithm {self._algo}")
         return tarops
