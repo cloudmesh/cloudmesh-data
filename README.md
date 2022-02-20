@@ -18,6 +18,11 @@ see cloudmesh.data
 
 If you use xz: 
 
+### Windows/Linux
 ```
 sudo apt-get install liblzma-dev
+```
+### MacOS
+```
+brew install xz
 ```
