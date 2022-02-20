@@ -285,6 +285,7 @@ class NativeData(Data):
             'level': 5
         },
         "tar": {
+            'cmds': ('tar', ),
             'compress'   : 'tar -cf {DESTINATION} {SOURCE}',
             'uncompress' : 'tar -xf {SOURCE} -C {DESTINATION}',
         },
