@@ -36,7 +36,7 @@ class Test_data(object):
             size = os.stat(r).st_size
             print(size)
 
-    @pytest.xfail("shlex is unable to process wit do_data; maybe move to click?")
+    @pytest.xfail(run=False, reason="shlex is unable to process wit do_data; maybe move to click?")
     def test_003_compress(self):
         HEADING()
         r = data.do_data([
