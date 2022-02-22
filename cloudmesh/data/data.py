@@ -13,7 +13,7 @@ import typing
 try:
     import lzma
 except ImportError as e:
-    print("System not built with LZMA support, system will only support native calls",
+    print("WARNING: System not built with LZMA support, system will only support native calls",
           file=sys.stderr)
 
 """
