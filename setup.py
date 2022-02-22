@@ -68,6 +68,7 @@ setup(
     tests_require=[
         "flake8",
         "coverage",
+        "pytest"
     ],
     zip_safe=False,
     namespace_packages=['cloudmesh'],
