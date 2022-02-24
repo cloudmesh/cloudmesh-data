@@ -6,6 +6,8 @@
 
 import os
 import pytest
+import hashlib
+from testfixtures import compare
 from cloudmesh.common.Shell import Shell
 from cloudmesh.common.util import HEADING
 from cloudmesh.data.create import ascii_file
@@ -36,7 +38,7 @@ class Test_data(object):
             size = os.stat(r).st_size
             print(size)
 
-    @pytest.mark.xfail(run=False, reason="shlex is unable to process wit do_data; maybe move to click?")
+    #@pytest.mark.xfail(run=False, reason="shlex is unable to process wit do_data; maybe move to click?")
     def test_003_compress(self):
         HEADING()
         r = data.do_data([
@@ -53,6 +55,30 @@ class Test_data(object):
                      f"r_{self.size}.txt.xz"]:
             r = os.stat(fyle).st_size
             print(r)
+
+    def test_004_uncompress(self):
+        HEADING()
+        Shell.run("cms data uncompress"
+                  f" --source=r_{self.size}.txt.xz"
+                  f" --destination=r_uncompressed_{self.size}.txt")
+        Shell.run("cms data uncompress"
+                  f" --source=a_{self.size}.txt.xz"
+                  f" --destination=a_uncompressed_{self.size}.txt")
+
+    def test_005_integrity(self):
+        HEADING()
+        def create_hash(file):
+            sha256 = hashlib.sha256()
+            with open(file, 'rb') as f:
+                buffer = f.read()
+                sha256.update(buffer)
+                return sha256.hexdigest()
+        ascii_original = create_hash(f"a_{self.size}.txt")
+        ascii_uncompressed = create_hash(f"a_uncompressed_{self.size}.txt")
+        random_original = create_hash(f"r_{self.size}.txt")
+        random_uncompressed = create_hash(f"r_uncompressed_{self.size}.txt")
+        compare(ascii_original, ascii_uncompressed)
+        compare(random_original, random_uncompressed)
 
     def test_100_cleanup(self):
         HEADING()

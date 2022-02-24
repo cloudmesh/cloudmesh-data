@@ -382,7 +382,8 @@ class NativeData(Data):
         Raises:
 
         """
-        os.makedirs(destination, exist_ok=True)
+        if not self._algo == 'xz':
+            os.makedirs(destination, exist_ok=True)
         command = self.cmds[self._algo]['uncompress'].format(
             SOURCE=source,
             DESTINATION=destination
