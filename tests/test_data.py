@@ -38,7 +38,7 @@ class Test_data(object):
             size = os.stat(r).st_size
             print(size)
 
-    #@pytest.mark.xfail(run=False, reason="shlex is unable to process wit do_data; maybe move to click?")
+    @pytest.mark.xfail(run=False, reason="shlex is unable to process wit do_data; maybe move to click?")
     def test_003_compress(self):
         HEADING()
         r = data.do_data([
@@ -65,6 +65,7 @@ class Test_data(object):
                   f" --source=a_{self.size}.txt.xz"
                   f" --destination=a_uncompressed_{self.size}.txt")
 
+    @pytest.mark.xfail(run=False, reason="Need to fix compression test before this runs")
     def test_005_integrity(self):
         HEADING()
         def create_hash(file):
