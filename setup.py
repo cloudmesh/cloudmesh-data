@@ -18,21 +18,13 @@
 from setuptools import find_packages, setup
 import io
 
+
 def readfile(filename):
     with io.open(filename, encoding="utf-8") as stream:
         return stream.read().split()
 
 
-#requiers = readfile ('requirements.txt')
-#
-# add minimum requirements here
-#
-requiers = """
-cloudmesh-cmd5
-cloudmesh-sys
-cloudmesh-inventory
-cloudmesh-configuration
-""".split("\n")
+requiers = readfile('requirements.txt')
 
 # dependency_links = ['http://github.com/nicolaiarocci/eve.git@develop']
 
@@ -76,6 +68,7 @@ setup(
     tests_require=[
         "flake8",
         "coverage",
+        "pytest"
     ],
     zip_safe=False,
     namespace_packages=['cloudmesh'],
