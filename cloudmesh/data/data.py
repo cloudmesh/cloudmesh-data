@@ -353,7 +353,7 @@ class NativeData(Data):
             LEVEL=level
             )
         self._start("compress", name, self._tag)
-        self._run(command, driver=os.system)
+        self._run(command)
         self._stop("compress", name, self._tag, )
         return destination
 

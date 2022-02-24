@@ -12,7 +12,7 @@ from cloudmesh.common.Shell import Shell
 from cloudmesh.common.util import HEADING
 from cloudmesh.data.create import ascii_file
 from cloudmesh.data.create import random_file
-from cloudmesh.data.command.data import DataCommand as data
+from cloudmesh.data.command.data import DataCommand
 
 
 @pytest.mark.incremental
@@ -38,34 +38,41 @@ class Test_data(object):
             size = os.stat(r).st_size
             print(size)
 
-    @pytest.mark.xfail(run=False, reason="shlex is unable to process wit do_data; maybe move to click?")
     def test_003_compress(self):
         HEADING()
-        r = data.do_data([
-                f" --source=r_{self.size}.txt",
-                f" --destination=r_{self.size}.txt.xz"], None)
+        data = DataCommand()
+        r = data.do_data(
+                f"compress --source=r_{self.size}.txt"
+                f" --destination=r_{self.size}.txt.xz")
 
-        a = data.do_data([
-                f" --source=a_{self.size}.txt",
-                f" --destination=a_{self.size}.txt.xz"], None)
+        a = data.do_data(
+                f"compress --source=a_{self.size}.txt"
+                f" --destination=a_{self.size}.txt.xz")
 
-        for fyle in [f"a_{self.size}.txt",
+        for file in [f"a_{self.size}.txt",
                      f"a_{self.size}.txt.xz",
                      f"r_{self.size}.txt",
                      f"r_{self.size}.txt.xz"]:
-            r = os.stat(fyle).st_size
+            r = os.stat(file).st_size
             print(r)
 
     def test_004_uncompress(self):
         HEADING()
-        Shell.run("cms data uncompress"
-                  f" --source=r_{self.size}.txt.xz"
-                  f" --destination=r_uncompressed_{self.size}.txt")
-        Shell.run("cms data uncompress"
-                  f" --source=a_{self.size}.txt.xz"
-                  f" --destination=a_uncompressed_{self.size}.txt")
+        data = DataCommand()
+        r = data.do_data(
+                f"uncompress --source=r_{self.size}.txt.xz"
+                f" --destination=r_uncompressed_{self.size}.txt")
 
-    @pytest.mark.xfail(run=False, reason="Need to fix compression test before this runs")
+        a = data.do_data(
+                f"uncompress --source=a_{self.size}.txt.xz"
+                f" --destination=a_uncompressed_{self.size}.txt")
+        for file in [f"a_{self.size}.txt.xz",
+                     f"a_uncompressed_{self.size}.txt",
+                     f"r_{self.size}.txt.xz",
+                     f"r_uncompressed_{self.size}.txt"]:
+            r = os.stat(file).st_size
+            print(r)
+
     def test_005_integrity(self):
         HEADING()
         def create_hash(file):
