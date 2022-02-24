@@ -45,6 +45,7 @@ tar xf DIR.tar.gz
 
 """
 
+
 @dataclasses.dataclass
 class CompressExtensions:
     gz = ('.gz',)
@@ -54,8 +55,6 @@ class CompressExtensions:
     targz = ('.tar.gz', '.tgz')
     tarbz2 = ('.tar.bz2', '.tbz2')
     tarxz = ('.tar.xz', '.txz')
-
-
 
     @staticmethod
     def detect(path):
@@ -162,7 +161,11 @@ class Data:
         compressed file all types will be probed (xz, gz, bzip2)
 
         :param source: file or directory
-        :return: str
+        :type source:
+        :param binary:
+        :type binary:
+        :return:
+        :rtype: str
         """
         if not binary:
             return Shell.run(f"du -sh {source}").strip().split()[0]
@@ -243,6 +246,7 @@ class Data:
                        force=force)
 
         self._uncompress(**command)
+        return destination
 
     def _uncompress(self, *args, **kwargs):
         """Uncompress method to be inherited with alternate implementations
@@ -285,24 +289,24 @@ class NativeData(Data):
             'level': 5
         },
         "tar": {
-            'cmds': ('tar', ),
-            'compress'   : 'tar -cf {DESTINATION} {SOURCE}',
-            'uncompress' : 'tar -xf {SOURCE} -C {DESTINATION}',
+            'cmds': ('tar',),
+            'compress': 'tar -cf {DESTINATION} {SOURCE}',
+            'uncompress': 'tar -xf {SOURCE} -C {DESTINATION}',
         },
         'targz': {
-            'cmds': ('tar', ),
+            'cmds': ('tar',),
             'compress': 'tar -zcf {DESTINATION} {SOURCE}',
             'uncompress': 'tar -zxf {SOURCE} -C {DESTINATION}',
         },
         'tarbz2': {
-            'cmds': ('tar', ),
+            'cmds': ('tar',),
             'compress': 'tar -jcf {DESTINATION} {SOURCE}',
-            'uncompress'  : 'tar -jxf {SOURCE} -C {DESTINATION}',
+            'uncompress': 'tar -jxf {SOURCE} -C {DESTINATION}',
         },
         'tarxz': {
-            'cmds': ('tar', ),
+            'cmds': ('tar',),
             'compress': 'tar -Jcf {DESTINATION} {SOURCE}',
-            'uncompress'  : 'tar -Jxf {SOURCE} -C {DESTINATION}',
+            'uncompress': 'tar -Jxf {SOURCE} -C {DESTINATION}',
         }
     }
 
@@ -351,7 +355,7 @@ class NativeData(Data):
             SOURCE=source,
             DESTINATION=destination,
             LEVEL=level
-            )
+        )
         self._start("compress", name, self._tag)
         self._run(command, driver=os.system)
         self._stop("compress", name, self._tag, )
@@ -495,7 +499,7 @@ class PythonData(Data):
 
     def _tarfile_bootstrap(self,
                            extract: bool = False,
-                           level: int = None,) -> typing.Dict[str, typing.Union[str, int]]:
+                           level: int = None, ) -> typing.Dict[str, typing.Union[str, int]]:
         """tarfile configuration method
 
         Unifies multiple tarfile configuration options across several
@@ -514,8 +518,8 @@ class PythonData(Data):
         """
         mode = 'r' if extract else 'x'
         compression_create_types = {
-            'tarxz' : f'{mode}:xz',
-            'targz' : f'{mode}:gz',
+            'tarxz': f'{mode}:xz',
+            'targz': f'{mode}:gz',
             'tarbz2': f'{mode}:bz2',
             'tar': f'{mode}:'
         }

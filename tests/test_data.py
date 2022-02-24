@@ -40,12 +40,12 @@ class Test_data(object):
     def test_003_compress(self):
         HEADING()
         r = data.do_data([
-                f" --source=r_{self.size}.txt",
-                f" --destination=r_{self.size}.txt.xz"], None)
+            f" --source=r_{self.size}.txt",
+            f" --destination=r_{self.size}.txt.xz"], None)
 
         a = data.do_data([
-                f" --source=a_{self.size}.txt",
-                f" --destination=a_{self.size}.txt.xz"], None)
+            f" --source=a_{self.size}.txt",
+            f" --destination=a_{self.size}.txt.xz"], None)
 
         for fyle in [f"a_{self.size}.txt",
                      f"a_{self.size}.txt.xz",
