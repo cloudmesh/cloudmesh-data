@@ -19,8 +19,16 @@ def ascii_file(filename, size, c="0"):
     generate an ascii file with given size that only contains the char c
 
     :param filename: the filename
+    :type filename:
     :param size: the size in bytes
+    :type size:
+    :param c:
+    :type c:
     :return: void
+    :rtype: void
+    """
+    """
+    
     """
     s = get_real_size(size)
     with open(filename, 'wb') as f:

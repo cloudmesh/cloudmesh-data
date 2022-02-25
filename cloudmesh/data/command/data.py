@@ -42,7 +42,7 @@ class DataCommand(PluginCommand):
         """
 
         # TODO: compress should be
-        #                 data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE... [--destination=DESTINATION]
+        #     data compress [--benchmark] [--algorithm=KIND] [--level=N] --source=SOURCE... [--destination=DESTINATION]
         # TODO: as far as I can tell sepopts is not needed .... do not have two steps ...
 
         """
@@ -63,7 +63,6 @@ class DataCommand(PluginCommand):
                        "csv",
                        "dryrun")
 
-
         if arguments.algorithm:
             algorithm = arguments.algorithm
         else:
@@ -80,7 +79,6 @@ class DataCommand(PluginCommand):
         except RuntimeError as e:
             print(e, file=sys.stderr)
             worker = PythonData(algorithm=algorithm, dryrun=arguments.dryrun)
-
 
         if arguments.compress:
             arguments.source = path_expand(arguments.source)
@@ -118,9 +116,9 @@ class DataCommand(PluginCommand):
                 s = _info_source.split()[0]
                 d = _info_dest.split()[0]
                 r = float(worker.get_info(source, binary=True)) / float(worker.get_info(arguments.source, binary=True))
-                print (f"{r:.2f}")
+                print(f"{r:.2f}")
 
             except Exception as e:
-                print (e)
+                print(e)
 
         return ""
