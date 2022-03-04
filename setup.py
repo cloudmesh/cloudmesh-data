@@ -24,7 +24,14 @@ def readfile(filename):
         return stream.read().split()
 
 
-requiers = readfile('requirements.txt')
+#requiers = readfile('requirements.txt')
+
+requiers = """
+cloudmesh-cmd5
+cloudmesh-sys
+cloudmesh-inventory
+cloudmesh-configuration
+""".splitlines()
 
 # dependency_links = ['http://github.com/nicolaiarocci/eve.git@develop']
 
