@@ -41,7 +41,10 @@ jobs:
         pip install -e .
     - name: Test with pytest
       run: |
-        coverage run -m pytest
+        pwd
+        ls
+        which python
+        python --version
     - name: Create wheel
       run: |
         python setup.py sdist bdist_wheel

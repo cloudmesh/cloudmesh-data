@@ -24,7 +24,14 @@ def readfile(filename):
         return stream.read().split()
 
 
-requiers = readfile('requirements.txt')
+#requiers = readfile('requirements.txt')
+
+requiers = """
+cloudmesh-cmd5
+cloudmesh-sys
+cloudmesh-inventory
+cloudmesh-configuration
+""".splitlines()
 
 # dependency_links = ['http://github.com/nicolaiarocci/eve.git@develop']
 
@@ -61,8 +68,10 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        
     ],
     install_requires=requiers,
     tests_require=[
