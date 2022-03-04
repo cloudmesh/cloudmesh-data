@@ -19,11 +19,11 @@ from cloudmesh.data.command.data import DataCommand
 class Test_data(object):
 
     def setup(self):
-        self.size = "1GB"
+        self.size = "50KB"
 
     def test_001_help(self):
         HEADING()
-        r = Shell.run("cms data")
+        r = Shell.run("cms data").strip()
         print(r)
         assert "Usage:" in r
         assert "data compress [--benchmark]" in r
