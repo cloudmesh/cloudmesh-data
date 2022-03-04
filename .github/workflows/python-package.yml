@@ -41,6 +41,9 @@ jobs:
         pip install -e .
     - name: Test with pytest
       run: |
+        coverage run -m pytest
+    - name: Find Path
+      run: |
         pwd
         ls
         which python
